@@ -1,5 +1,8 @@
 ##############################################
 import random
+import string
+import uuid
+
 import urllib3
 import boto3
 import logging
@@ -26,50 +29,51 @@ class Client:
         except Exception:
             return None
 
-    def create_bucket(self, Bucket):
+    def create_bucket(self, bucket):
         NotImplemented
 
-    def delete_bucket(self, Bucket):
+    def delete_bucket(self, bucket):
         NotImplemented
 
     def upload_file(self, source_file_path, bucket, dest_file_name):
         NotImplemented
 
-    def head_object(self, Bucket, Key):
+    def head_object(self, bucket, key):
         NotImplemented
 
-    def get_object(self, Bucket, Key):
+    def get_object(self, bucket, key):
         NotImplemented
 
-    def delete_object(self, Bucket, Key):
+    def delete_object(self, bucket, key):
         NotImplemented
 
 
 class MinioClient(Client):
-    def __init__(self, s3_url, s3_key, s3_port, s3_secret):
+    def __init__(self, s3_key, port, s3_secret, s3_url):
         super().__init__()
         c = urllib3.PoolManager(s3_url, port=9000, cert_reqs='CERT_NONE', assert_hostname=False)
-        url = "{}:{}".format(s3_url, s3_port)
-        self.client = Minio(url, s3_secret, s3_url, http_client=c)
+        url = "%s:%s" % (s3_url, port)
+        self.client = Minio(url, s3_key, s3_secret, http_client=c)
 
-    def create_bucket(self, Bucket):
-        print(Bucket)
-        self.client.make_bucket(Bucket)
+    def create_bucket(self, bucket):
+        self.client.make_bucket(bucket_name=str(bucket))
 
-    def delete_bucket(self, Bucket):
-        pass
+    def delete_bucket(self, bucket):
+        self.client.remove_bucket(str(bucket))
 
     def upload_file(self, source_file_path, bucket, dest_file_name):
-        pass
+        self.client.fput_object(str(bucket), object_name=dest_file_name, file_path=source_file_path)
 
-    def head_object(self, Bucket, Key):
-        pass
+    def head_object(self, bucket, key):
+        self.client.get_object(bucket_name=str(bucket), object_name=key)
 
-    def get_object(self, Bucket, Key):
-        pass
+    def get_object(self, bucket, key):
+        letters = string.ascii_lowercase
+        file_path = ''.join(random.choice(letters) for i in range(10))
+        self.client.fget_object(bucket_name=bucket, object_name=key, file_path=file_path)
 
-    def delete_object(self, Bucket, Key):
-        pass
+    def delete_object(self, bucket, key):
+        self.client.remove_object(bucket_name=str(bucket), object_name=key)
 
 
 class BotoClient(Client):
