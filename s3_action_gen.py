@@ -6,7 +6,7 @@ import logging
 import sys
 import time
 import subprocess
-# from minio import Minio
+from minio import Minio
 ##############################################
 
 
@@ -74,7 +74,7 @@ class MinioClient(Client):
 
 class BotoClient(Client):
     def __init__(self, s3_key, port, s3_secret, s3_url) -> None:
-        s3_url = '%s:%s' % (s3_url, port)
+        s3_url = 'https://%s:%s' % (s3_url, port)
         session = boto3.session.Session()
         self.client = session.client('s3',
                                      endpoint_url=s3_url,
@@ -111,7 +111,7 @@ class AwsCliClient(Client):
             logging.error(msg)
             print(msg)
             exit(1)
-
+        s3_url = 'https://%s' % s3_url
         self.endpoint_url = s3_url,
         self.endpoint_port = s3_port,
         self.aws_access_key_id = s3_key,
@@ -169,14 +169,13 @@ def run_s3_actions(argv):
     client_type = argv[1]
     s3_key = argv[2]
     s3_secret = argv[3]
-    endpoint_addr = argv[4]
+    s3_url = argv[4]
     port = argv[5]
     files_cycles_count = int(argv[6])
     files_size = argv[7]
     buckets_cycles_count = argv[8]
 
     urllib3.disable_warnings()
-    s3_url = 'https://%s' % endpoint_addr
     client = Client.get_client(client_type, s3_key, port, s3_secret, s3_url)
 
     logging.info("-> Creating data file")
