@@ -235,14 +235,14 @@ def create_data_file(file_count, file_size, client_type):
 
 
 def run_s3_actions(argv):
-    client_type = argv[1]
-    s3_key = argv[2]
-    s3_secret = argv[3]
-    s3_url = argv[4]
-    port = argv[5]
-    files_cycles_count = int(argv[6])
-    files_size = argv[7]
-    buckets_cycles_count = argv[8]
+    client_type = param['-s3_client']
+    s3_key = param['-s3_key_id']
+    s3_secret = param['-s3_key_secret']
+    s3_url = param['-endpoint']
+    port = param['-endpoint_port']
+    files_cycles_count = int(param['-files_amount'])
+    files_size = param['-file_size']
+    buckets_cycles_count = param['-bucket_count']
 
     urllib3.disable_warnings()
     client = Client.get_client(client_type, s3_key, port, s3_secret, s3_url)
@@ -327,8 +327,9 @@ def run_s3_actions(argv):
 
 if __name__ == "__main__":
 
-    help_msg = "Synx: ./s3_action_gen <client_type> <s3_key> <s3_secret> <endpoint_address> <port> " \
-               "<files_cycles_count> <files_size>  <buckets_cycles_count>"
+    help_msg = 'Synx: ./s3_action_gen -s3_client=<minio|boto|awscli> -s3_key_id=<access_key_id> ' \
+               '-s3_key_secret=<secret_access_key> -endpoint=<IP|DNS-Name> -endpoint_port=<TCP_port> ' \
+               '-files_amount=<Number> -file_size=<1b|1k|1m|1g|etc.> -bucket_count=<Number>'
 
     if len(sys.argv) < 8:
         print("! Missing argument !")
@@ -338,6 +339,10 @@ if __name__ == "__main__":
     elif sys.argv[1] in ('-h', '--help'):
         print(help_msg)
         exit()
+
+    param = {}
+    for arg in sys.argv[1:]:
+        param[arg.split("=")[0]] = arg.split("=")[1]
 
     str_format = "%(asctime)s: %(message)s"
     logging.basicConfig(filename=f"log.log", filemode='a', format=str_format, level=logging.INFO, datefmt="%H:%M:%S")
