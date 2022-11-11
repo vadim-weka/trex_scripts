@@ -6,7 +6,7 @@ import logging
 import sys
 import time
 import subprocess
-from minio import Minio
+# from minio import Minio
 ##############################################
 
 TYPES = {
@@ -18,6 +18,7 @@ TYPES = {
 
 class Client:
 
+class CliCmd:
     @staticmethod
     def get_client(client_type, **kwargs):
 
@@ -111,20 +112,23 @@ class AwsCliCmd(Client):
         self.aws_access_key_id = s3_key,
         self.aws_secret_access_key = s3_secret
 
-        subprocess.check_output(['aws', 'configure', 'set', 'aws_secret_access_key', f'{self.aws_secret_access_key}'])
-        subprocess.check_output(['aws', 'configure', 'set', 'aws_access_key_id', f'{self.aws_access_key_id}'])
+        subprocess.check_output(['aws', 'configure', 'set', 'aws_access_key_id', '%s' % self.aws_access_key_id])
+        subprocess.check_output(['aws', 'configure', 'set', 'aws_secret_access_key', '%s' % self.aws_secret_access_key])
         subprocess.check_output(['aws', 'configure', 'set', 'region', 'default'])
 
     def create_bucket(self, Bucket):
         cmd = subprocess.run(['aws',
-                                 's3api',
-                                 'create-bucket',
-                                 '--bucket',
-                                 '%s' % Bucket,
-                                 '--endpoint-url',
-                                 '%s/' % self.endpoint_url,
-                                 '--no-verify-ssl'], stderr=subprocess.PIPE)
-        cmd.stderr.decode('utf-8')
+                              's3api',
+                              'create-bucket',
+                              '--bucket',
+                              '%s' % Bucket,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
     def delete_bucket(self, Bucket):
         pass
@@ -141,21 +145,6 @@ class AwsCliCmd(Client):
     def delete_object(self, Bucket, Key):
         pass
 
-
-def get_client(client_type, s3_key, s3_port, s3_secret, s3_url):
-    if client_type == 'boto':
-        session = boto3.session.Session()
-        client = session.client('s3',
-                                endpoint_url=s3_url,
-                                aws_access_key_id=s3_key,
-                                aws_secret_access_key=s3_secret,
-                                region_name='ignored-by-minio',
-                                verify=False)
-
-        return client
-    elif client_type == 'awscli':
-        return AwsCliCmd(s3_url, s3_port, s3_key, s3_secret)
-    
 
 def create_data_file(file_count, file_size, client_type):
     file_list = []
@@ -183,7 +172,7 @@ def run_s3_actions(argv):
 
     urllib3.disable_warnings()
     s3_url = 'https://%s:%s' % (endpoint_addr, port)
-    client = get_client(client_type, s3_key, port, s3_secret, s3_url)
+    client = CliCmd.get_client(client_type, s3_key, port, s3_secret, s3_url)
 
     logging.info("-> Creating data file")
     try:
@@ -194,7 +183,7 @@ def run_s3_actions(argv):
 
     for bucket_cycle in range(0, int(buckets_cycles_count)):
         logging.info("-> Creating bucket")
-        bucket_name = f'test{bucket_cycle}'
+        bucket_name = f'{client_type}{bucket_cycle}'
         try:
             client.create_bucket(Bucket=bucket_name)
         except Exception as err:
@@ -207,9 +196,8 @@ def run_s3_actions(argv):
         for cycle in range(0, files_cycles_count):
             test_files = []
             for count, file in enumerate(input_files):
-                test_file_name = f'test_file{count}'
+                test_file_name = f'{client_type}{count}'
                 logging.info("-> Uploading file '%s' to Bucket '%s'" % (test_file_name, bucket_name))
-                test_file_name = f'test_file{count}'
                 try:
                     client.upload_file(f'./{file}', bucket_name, test_file_name)
                 except Exception as err:
