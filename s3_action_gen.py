@@ -10,6 +10,7 @@ import sys
 import time
 import subprocess
 from minio import Minio
+
 ##############################################
 
 
@@ -69,7 +70,7 @@ class MinioClient(Client):
 
     def get_object(self, bucket, key):
         letters = string.ascii_lowercase
-        file_path = ''.join(random.choice(letters) for i in range(10))
+        file_path = "files/{}".format(''.join(random.choice(letters) for i in range(10)))
         self.client.fget_object(bucket_name=bucket, object_name=key, file_path=file_path)
 
     def delete_object(self, bucket, key):
@@ -262,9 +263,15 @@ def run_s3_actions(argv):
         logging.info("-> Creating bucket")
         bucket_name = f'{client_type}{bucket_cycle}'
         try:
-            client.create_bucket(bucket_name)
+            for i in range(3):
+                try:
+                    time.sleep(1)
+                    client.create_bucket(bucket_name)
+                    break
+                except Exception:
+                    continue
         except Exception as err:
-            msg = "Fail to create bucket '%s'" % bucket_name
+            msg = 'Fail to createΩ bucket \'%s\'' % bucket_name
             logging.error("%s , error msg: %s" % (msg, err))
             print(msg)
 
@@ -349,7 +356,7 @@ if __name__ == "__main__":
         param[arg.split("=")[0]] = arg.split("=")[1]
 
     str_format = "%(asctime)s: %(message)s"
-    logging.basicConfig(filename=f"log.log", filemode='a', format=str_format, level=logging.INFO, datefmt="%H:%M:%S")
+    logging.basicConfig(filename=f"{param['-s3_client']}.log", filemode='a', format=str_format, level=logging.INFO, datefmt="%H:%M:%S")
 
     run_uid = int(random.random() * 10000000000)
     logging.info('######### Script Start, id: %s start time: %s #############' % (run_uid, int(time.time())))
