@@ -9,24 +9,22 @@ import subprocess
 # from minio import Minio
 ##############################################
 
+
 TYPES = {
-    "AwsCli": "AwsCliCmd",
-    "Boto": "BotoClient",
-    "Minio": "MinioClient",
+    "awscli": "AwsCliClient",
+    "boto": "BotoClient",
+    "minio": "MinioClient",
 }
 
 
 class Client:
-
-class CliCmd:
     @staticmethod
-    def get_client(client_type, **kwargs):
+    def get_client(client_type, *args):
 
-        # try:
-        print(eval(TYPES[client_type])(**kwargs))
-        return eval(TYPES[client_type])(**kwargs)
-        # except Exception:
-        #     return None
+        try:
+            return eval(TYPES[client_type])(*args)
+        except Exception:
+            return None
 
     def create_bucket(self, Bucket):
         NotImplemented
@@ -75,29 +73,36 @@ class MinioClient(Client):
 
 
 class BotoClient(Client):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, s3_key, port, s3_secret, s3_url) -> None:
+        s3_url = '%s:%s' % (s3_url, port)
+        session = boto3.session.Session()
+        self.client = session.client('s3',
+                                     endpoint_url=s3_url,
+                                     aws_access_key_id=s3_key,
+                                     aws_secret_access_key=s3_secret,
+                                     region_name='ignored-by-minio',
+                                     verify=False)
 
-    def create_bucket(self, Bucket):
-        pass
+    def create_bucket(self, bucket):
+        return self.client.create_bucket(Bucket=bucket)
 
-    def delete_bucket(self, Bucket):
-        pass
+    def delete_bucket(self, bucket):
+        return self.client.delete_bucket(Bucket=bucket)
 
     def upload_file(self, source_file_path, bucket, dest_file_name):
-        pass
+        return self.client.upload_file(source_file_path, bucket, dest_file_name)
 
-    def head_object(self, Bucket, Key):
-        pass
+    def head_object(self, bucket, key):
+        return self.client.head_object(Bucket=bucket, Key=key)
 
-    def get_object(self, Bucket, Key):
-        pass
+    def get_object(self, bucket, key):
+        return self.client.get_object(Bucket=bucket, Key=key)
 
-    def delete_object(self, Bucket, Key):
-        pass
+    def delete_object(self, bucket, key):
+        return self.client.delete_object(Bucket=bucket, Key=key)
 
 
-class AwsCliCmd(Client):
+class AwsCliClient(Client):
     def __init__(self, s3_url, s3_port, s3_key, s3_secret):
         try:
             subprocess.check_output(["aws", "--version"])
@@ -116,12 +121,12 @@ class AwsCliCmd(Client):
         subprocess.check_output(['aws', 'configure', 'set', 'aws_secret_access_key', '%s' % self.aws_secret_access_key])
         subprocess.check_output(['aws', 'configure', 'set', 'region', 'default'])
 
-    def create_bucket(self, Bucket):
+    def create_bucket(self, bucket):
         cmd = subprocess.run(['aws',
                               's3api',
                               'create-bucket',
                               '--bucket',
-                              '%s' % Bucket,
+                              '%s' % bucket,
                               '--endpoint-url',
                               '%s/' % self.endpoint_url,
                               '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -171,8 +176,8 @@ def run_s3_actions(argv):
     buckets_cycles_count = argv[8]
 
     urllib3.disable_warnings()
-    s3_url = 'https://%s:%s' % (endpoint_addr, port)
-    client = CliCmd.get_client(client_type, s3_key, port, s3_secret, s3_url)
+    s3_url = 'https://%s' % endpoint_addr
+    client = Client.get_client(client_type, s3_key, port, s3_secret, s3_url)
 
     logging.info("-> Creating data file")
     try:
@@ -185,7 +190,7 @@ def run_s3_actions(argv):
         logging.info("-> Creating bucket")
         bucket_name = f'{client_type}{bucket_cycle}'
         try:
-            client.create_bucket(Bucket=bucket_name)
+            client.create_bucket(bucket_name)
         except Exception as err:
             msg = "Fail to create bucket '%s'" % bucket_name
             logging.error("%s , error msg: %s" % (msg, err))
@@ -211,7 +216,7 @@ def run_s3_actions(argv):
             for test_file in test_files:
                 logging.info("-> Retrieving File '%s' metadata" % test_file)
                 try:
-                    client.head_object(Bucket=bucket_name, Key=test_file)
+                    client.head_object(bucket_name, test_file)
                 except Exception as err:
                     msg = "Fail to execute head on object '%s' from bucket '%s'" % (file, bucket_name)
                     logging.error("%s, error msg: %s" % (msg, err))
@@ -220,7 +225,7 @@ def run_s3_actions(argv):
                 logging.info("<- File '%s' metadata retrieved (*)" % test_file)
                 logging.info("-> Downloading File '%s'" % test_file)
                 try:
-                    client.get_object(Bucket=bucket_name, Key=test_file)
+                    client.get_object(bucket_name, test_file)
                 except Exception as err:
                     msg = "Fail to get object '%s' from bucket '%s'" % (file, bucket_name)
                     logging.error("%s, error msg: %s" % (msg, err))
@@ -231,7 +236,7 @@ def run_s3_actions(argv):
             for test_file in test_files:
                 logging.info("-> Deleting file '%s' from S3 bucket '%s'" % (file, bucket_name))
                 try:
-                    client.delete_object(Bucket=bucket_name, Key=test_file)
+                    client.delete_object(bucket_name, test_file)
                 except Exception as err:
                     msg = "Fail to delete object '%s' from bucket '%s'" % (file, bucket_name)
                     logging.error("%s, error msg: %s" % (msg, err))
@@ -243,7 +248,7 @@ def run_s3_actions(argv):
 
         logging.info("-> Deleting bucket '%s'" % bucket_name)
         try:
-            client.delete_bucket(Bucket=bucket_name)
+            client.delete_bucket(bucket_name)
         except Exception as err:
             msg = "Fail to delete bucket '%s', error msg: %s" % (bucket_name, err)
             logging.error("%s, error msg: %s" % (msg, err))
