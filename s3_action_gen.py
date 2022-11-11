@@ -9,13 +9,23 @@ import subprocess
 from minio import Minio
 ##############################################
 
-class CliCmd:
-    def __init__(self) -> None:
-        pass
+TYPES = {
+    "AwsCli": "AwsCliCmd",
+    "Boto": "BotoClient",
+    "Minio": "MinioClient",
+}
+
+
+class Client:
 
     @staticmethod
-    def get_client(client_type, s3_key, port, s3_secret, s3_url):
-        NotImplemented
+    def get_client(client_type, **kwargs):
+
+        # try:
+        print(eval(TYPES[client_type])(**kwargs))
+        return eval(TYPES[client_type])(**kwargs)
+        # except Exception:
+        #     return None
 
     def create_bucket(self, Bucket):
         NotImplemented
@@ -36,7 +46,57 @@ class CliCmd:
         NotImplemented
 
 
-class AwsCliCmd(CliCmd):
+class MinioClient(Client):
+    def __init__(self, s3_url, s3_key, s3_port, s3_secret):
+        super().__init__()
+        c = urllib3.PoolManager(s3_url, port=9000, cert_reqs='CERT_NONE', assert_hostname=False)
+        url = "{}:{}".format(s3_url, s3_port)
+        self.client = Minio(url, s3_secret, s3_url, http_client=c)
+
+    def create_bucket(self, Bucket):
+        print(Bucket)
+        self.client.make_bucket(Bucket)
+
+    def delete_bucket(self, Bucket):
+        pass
+
+    def upload_file(self, source_file_path, bucket, dest_file_name):
+        pass
+
+    def head_object(self, Bucket, Key):
+        pass
+
+    def get_object(self, Bucket, Key):
+        pass
+
+    def delete_object(self, Bucket, Key):
+        pass
+
+
+class BotoClient(Client):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def create_bucket(self, Bucket):
+        pass
+
+    def delete_bucket(self, Bucket):
+        pass
+
+    def upload_file(self, source_file_path, bucket, dest_file_name):
+        pass
+
+    def head_object(self, Bucket, Key):
+        pass
+
+    def get_object(self, Bucket, Key):
+        pass
+
+    def delete_object(self, Bucket, Key):
+        pass
+
+
+class AwsCliCmd(Client):
     def __init__(self, s3_url, s3_port, s3_key, s3_secret):
         try:
             subprocess.check_output(["aws", "--version"])
@@ -96,7 +156,6 @@ def get_client(client_type, s3_key, s3_port, s3_secret, s3_url):
     elif client_type == 'awscli':
         return AwsCliCmd(s3_url, s3_port, s3_key, s3_secret)
     
-
 
 def create_data_file(file_count, file_size, client_type):
     file_list = []
