@@ -52,7 +52,7 @@ class MinioClient(Client):
     def __init__(self, s3_key, port, s3_secret, s3_url):
         super().__init__()
         c = urllib3.PoolManager(s3_url, port=9000, cert_reqs='CERT_NONE', assert_hostname=False)
-        url = "%s:%s" % (s3_url, port)
+        url = "%s" % s3_url if port is None else "%s:%s" % (s3_url, port)
         self.client = Minio(url, s3_key, s3_secret, http_client=c)
 
     def create_bucket(self, bucket):
@@ -78,7 +78,8 @@ class MinioClient(Client):
 
 class BotoClient(Client):
     def __init__(self, s3_key, port, s3_secret, s3_url) -> None:
-        s3_url = 'https://%s:%s' % (s3_url, port)
+
+        s3_url = 'https://%s' % s3_url if port is None else 'https://%s:%s' % (s3_url, port)
         session = boto3.session.Session()
         self.client = session.client('s3',
                                      endpoint_url=s3_url,
@@ -115,7 +116,7 @@ class AwsCliClient(Client):
             logging.error(msg)
             print(msg)
             exit(1)
-        s3_url = 'https://%s:%s' % (s3_url, s3_port)
+        s3_url = 'https://%s' % s3_url if s3_port is None else 'https://%s:%s' % (s3_url, s3_port)
         self.endpoint_url = s3_url,
         self.aws_access_key_id = s3_key,
         self.aws_secret_access_key = s3_secret
@@ -239,7 +240,10 @@ def run_s3_actions(argv):
     s3_key = param['-s3_key_id']
     s3_secret = param['-s3_key_secret']
     s3_url = param['-endpoint']
-    port = param['-endpoint_port']
+    try:
+        port = param['-endpoint_port']
+    except Exception:
+        port = None
     files_cycles_count = int(param['-files_amount'])
     files_size = param['-file_size']
     buckets_cycles_count = param['-bucket_count']
