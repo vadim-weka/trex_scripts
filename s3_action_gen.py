@@ -107,7 +107,7 @@ class BotoClient(Client):
 
 
 class AwsCliClient(Client):
-    def __init__(self, s3_url, s3_port, s3_key, s3_secret):
+    def __init__(self, s3_key, s3_port, s3_secret, s3_url):
         try:
             subprocess.check_output(["aws", "--version"])
         except Exception:
@@ -115,9 +115,8 @@ class AwsCliClient(Client):
             logging.error(msg)
             print(msg)
             exit(1)
-        s3_url = 'https://%s' % s3_url
+        s3_url = 'https://%s:%s' % (s3_url, s3_port)
         self.endpoint_url = s3_url,
-        self.endpoint_port = s3_port,
         self.aws_access_key_id = s3_key,
         self.aws_secret_access_key = s3_secret
 
@@ -139,20 +138,86 @@ class AwsCliClient(Client):
         if cmd.returncode != 0:
             print(cmd.stderr)
 
-    def delete_bucket(self, Bucket):
-        pass
+    def delete_bucket(self, bucket):
+        cmd = subprocess.run(['aws',
+                              's3api',
+                              'delete-bucket',
+                              '--bucket',
+                              '%s' % bucket,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
     def upload_file(self, source_file_path, bucket, dest_file_name):
-        pass
+        cmd = subprocess.run(['aws',
+                              's3api',
+                              'put-object',
+                              '--bucket',
+                              '%s' % bucket,
+                              '--key',
+                              '%s' % dest_file_name,
+                              '--body',
+                              '%s' % source_file_path,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
-    def head_object(self, Bucket, Key):
-        pass
+    def head_object(self, bucket, key):
+        cmd = subprocess.run(['aws',
+                              's3api',
+                              'head-object',
+                              '--bucket',
+                              '%s' % bucket,
+                              '--key',
+                              '%s' % key,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
-    def get_object(self, Bucket, Key):
-        pass
+    def get_object(self, bucket, key):
+        cmd = subprocess.run(['aws',
+                              's3api',
+                              'get-object',
+                              '--bucket',
+                              '%s' % bucket,
+                              '--key',
+                              '%s' % key,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl',
+                              'object_output'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
-    def delete_object(self, Bucket, Key):
-        pass
+    def delete_object(self, bucket, key):
+        cmd = subprocess.run(['aws',
+                              's3api',
+                              'delete-object',
+                              '--bucket',
+                              '%s' % bucket,
+                              '--key',
+                              '%s' % key,
+                              '--endpoint-url',
+                              '%s/' % self.endpoint_url,
+                              '--no-verify-ssl'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        logging.info(cmd.stderr)
+        logging.info(cmd.stdout)
+        if cmd.returncode != 0:
+            print(cmd.stderr)
 
 
 def create_data_file(file_count, file_size, client_type):
