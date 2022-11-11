@@ -6,10 +6,37 @@ import logging
 import sys
 import time
 import subprocess
+from minio import Minio
 ##############################################
 
+class CliCmd:
+    def __init__(self) -> None:
+        pass
 
-class AwsCliCmd:
+    @staticmethod
+    def get_client(client_type, s3_key, port, s3_secret, s3_url):
+        NotImplemented
+
+    def create_bucket(self, Bucket):
+        NotImplemented
+
+    def delete_bucket(self, Bucket):
+        NotImplemented
+
+    def upload_file(self, source_file_path, bucket, dest_file_name):
+        NotImplemented
+
+    def head_object(self, Bucket, Key):
+        NotImplemented
+
+    def get_object(self, Bucket, Key):
+        NotImplemented
+
+    def delete_object(self, Bucket, Key):
+        NotImplemented
+
+
+class AwsCliCmd(CliCmd):
     def __init__(self, s3_url, s3_port, s3_key, s3_secret):
         try:
             subprocess.check_output(["aws", "--version"])
@@ -55,8 +82,8 @@ class AwsCliCmd:
         pass
 
 
-def get_client(client_sype, s3_key, s3_port, s3_secret, s3_url):
-    if client_sype == 'boto':
+def get_client(client_type, s3_key, s3_port, s3_secret, s3_url):
+    if client_type == 'boto':
         session = boto3.session.Session()
         client = session.client('s3',
                                 endpoint_url=s3_url,
@@ -66,23 +93,22 @@ def get_client(client_sype, s3_key, s3_port, s3_secret, s3_url):
                                 verify=False)
 
         return client
-    elif client_sype == 'awscli':
+    elif client_type == 'awscli':
         return AwsCliCmd(s3_url, s3_port, s3_key, s3_secret)
+    
 
 
-def create_data_file(file_count, file_size):
+def create_data_file(file_count, file_size, client_type):
     file_list = []
     for seq_num in range(0, file_count):
-        file_name = f'test_file{seq_num}'
+        file_name = f'{client_type}{seq_num}'
         logging.info("--> File name: '%s', file size: %s'" % (file_name, file_size))
         try:
             subprocess.check_output(['dd', 'if=/dev/urandom', f'of=./{file_name}', 'count=1', f'bs={file_size}'],
                                     stderr=subprocess.PIPE)
         except Exception as err:
             logging.error("<-- Fail to create file '%s', error msg: %s" % (file_name, err))
-
         file_list.append(file_name)
-
     return file_list
 
 
@@ -102,7 +128,7 @@ def run_s3_actions(argv):
 
     logging.info("-> Creating data file")
     try:
-        input_files = create_data_file(files_cycles_count, files_size)
+        input_files = create_data_file(files_cycles_count, files_size, client_type)
     except Exception as err:
         logging.error(err)
     logging.info("<- File Created")
