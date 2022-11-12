@@ -222,6 +222,29 @@ class AwsCliClient(Client):
             print(cmd.stderr)
 
 
+class CurlClient(Client):
+    def __init__(self,  s3_key, s3_port, s3_secret, s3_url):
+        pass
+
+    def create_bucket(self, bucket):
+        NotImplemented
+
+    def delete_bucket(self, bucket):
+        NotImplemented
+
+    def upload_file(self, source_file_path, bucket, dest_file_name):
+        NotImplemented
+
+    def head_object(self, bucket, key):
+        NotImplemented
+
+    def get_object(self, bucket, key):
+        NotImplemented
+
+    def delete_object(self, bucket, key):
+        NotImplemented
+
+
 def create_data_file(file_count, file_size, client_type):
     file_list = []
     for seq_num in range(0, file_count):
