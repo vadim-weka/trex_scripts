@@ -18,6 +18,7 @@ TYPES = {
     "awscli": "AwsCliClient",
     "boto": "BotoClient",
     "minio": "MinioClient",
+    "curl": "CurlClient"
 }
 
 
@@ -222,27 +223,18 @@ class AwsCliClient(Client):
             print(cmd.stderr)
 
 
-class CurlClient(Client):
-    def __init__(self,  s3_key, s3_port, s3_secret, s3_url):
-        pass
-
-    def create_bucket(self, bucket):
-        NotImplemented
-
-    def delete_bucket(self, bucket):
-        NotImplemented
-
-    def upload_file(self, source_file_path, bucket, dest_file_name):
-        NotImplemented
-
-    def head_object(self, bucket, key):
-        NotImplemented
+class CurlClient(BotoClient):
+    def __init__(self, s3_key, port, s3_secret, s3_url):
+        super().__init__(s3_key, port, s3_secret, s3_url)
 
     def get_object(self, bucket, key):
-        NotImplemented
-
-    def delete_object(self, bucket, key):
-        NotImplemented
+        url = self.client.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=600)
+        # cmd = f'curl -k {url} -o d{key}'
+        d_file = f"target_{key}"
+        try:
+            subprocess.check_output(["curl", "-k", url, "-o", d_file], stderr=subprocess.PIPE)
+        except Exception as err:
+            logging.error("<-- CMD '%s', error msg: %s" % err)
 
 
 def create_data_file(file_count, file_size, client_type):
