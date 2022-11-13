@@ -229,10 +229,8 @@ class CurlClient(BotoClient):
 
     def get_object(self, bucket, key):
         url = self.client.generate_presigned_url('get_object', Params={'Bucket': bucket, 'Key': key}, ExpiresIn=600)
-        # cmd = f'curl -k {url} -o d{key}'
-        d_file = f"target_{key}"
         try:
-            subprocess.check_output(["curl", "-k", url, "-o", d_file], stderr=subprocess.PIPE)
+            subprocess.check_output(["curl", "-k", url, "-o", key], stderr=subprocess.PIPE)
         except Exception as err:
             logging.error("<-- CMD '%s', error msg: %s" % err)
 
