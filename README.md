@@ -2,8 +2,8 @@
 
 ### Help:
 
-`./s3_action_gen -s3_client=<minio|boto|awscli> -s3_key_id=<access_key_id> ' \
-               '-s3_key_secret=<secret_access_key> -endpoint=<IP|DNS-Name> -endpoint_port=<TCP_port> ' \
+`./s3_action_gen -s3_client=<minio|boto|awscli> -s3_key_id=<access_key_id> ' 
+               '-s3_key_secret=<secret_access_key> -endpoint=<IP|DNS-Name> -endpoint_port=<TCP_port> ' 
                '-files_amount=<Number> -file_size=<1b|1k|1m|1g|etc.> -bucket_count=<Number>'`
 
 ### Example:
