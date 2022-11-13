@@ -1,5 +1,10 @@
 # trex_scripts
 
+python3.7
+
+### Install
+`pip install -r requirements`
+
 ### Help:
 
 `./s3_action_gen -s3_client=<minio|boto|awscli> -s3_key_id=<access_key_id> ' 
